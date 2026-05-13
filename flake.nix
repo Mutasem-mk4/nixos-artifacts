@@ -18,7 +18,6 @@
 
   outputs = { self, nixpkgs, flake-utils, sops-nix, agenix }:
     let
-      # The NixOS module — importable by consumers
       nixosModule = import ./modules;
     in
     {
@@ -44,9 +43,13 @@
             dummy-basic
             dummy-permissions
             dummy-ordering
-            store-leak-rejected
+            dummy-custom-path
+            dummy-multiple-secrets
+            dummy-idempotency
             systemd-creds-basic
-            regression-rebuild;
+            store-leak-rejected
+            source-required
+            ;
         };
 
         # ── Dev shell for contributors ─────────────────────────────
@@ -56,7 +59,6 @@
             nixpkgs-fmt
             statix
             deadnix
-            nix-linter
           ];
           shellHook = ''
             echo "nixos-artifacts development shell"
