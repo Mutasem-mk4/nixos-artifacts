@@ -14,6 +14,10 @@ in {
           assertion = options ? age;
           message = "security.artifacts: One or more secrets use 'agenix' provider, but the agenix module is not imported.";
         }
+        {
+          assertion = lib.all (s: s.source != null) (lib.attrValues ageSecrets);
+          message = "security.artifacts: One or more secrets using 'agenix' are missing the 'source' option.";
+        }
       ];
 
       systemd.targets.nixos-artifacts-secrets = {

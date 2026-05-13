@@ -97,20 +97,9 @@ in {
       (lib.mapAttrsToList (name: secret: {
         assertion = !(lib.hasPrefix builtins.storeDir (builtins.toString secret.path));
         message = "security.artifacts: secret '${name}' resolves to '${secret.path}', which is inside /nix/store.";
-      }) cfg.secrets)
+      }) cfg.secrets);
 
-      ++
-
-      # 2. Source requirement check
-      (lib.mapAttrsToList (name: secret:
-        let
-          activeProvider = if secret.provider != null then secret.provider else cfg.provider;
-        in {
-          assertion = (activeProvider == "sops-nix" || activeProvider == "agenix") -> secret.source != null;
-          message = "security.artifacts: secret '${name}' requires 'source' for provider '${activeProvider}'.";
-        }
-      ) cfg.secrets);
-
+    # Global sync target
     systemd.targets.nixos-artifacts-secrets = {
       description = "All nixos-artifacts secrets have been provisioned";
       requires = [ "local-fs.target" ];

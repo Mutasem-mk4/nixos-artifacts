@@ -14,6 +14,10 @@ in {
           assertion = options ? sops;
           message = "security.artifacts: One or more secrets use 'sops-nix' provider, but the sops-nix module is not imported.";
         }
+        {
+          assertion = lib.all (s: s.source != null) (lib.attrValues sopsSecrets);
+          message = "security.artifacts: One or more secrets using 'sops-nix' are missing the 'source' option.";
+        }
       ];
 
       systemd.targets.nixos-artifacts-secrets = {
