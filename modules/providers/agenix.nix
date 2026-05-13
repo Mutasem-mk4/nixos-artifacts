@@ -2,32 +2,30 @@
 
 let
   cfg = config.security.artifacts;
+  ageSecrets = lib.filterAttrs (_: secret: 
+    let p = if secret.provider != null then secret.provider else cfg.provider;
+    in secret.enable && p == "agenix"
+  ) cfg.secrets;
 in {
-  config = lib.mkIf (cfg.enable && cfg.provider == "agenix") (lib.mkMerge [
+  config = lib.mkIf (cfg.enable && ageSecrets != {}) (lib.mkMerge [
     {
       assertions = [
         {
           assertion = options ? age;
-          message = "security.artifacts.provider is set to 'agenix', but the agenix module is not imported.";
+          message = "security.artifacts: One or more secrets use 'agenix' provider, but the agenix module is not imported.";
         }
       ];
 
-      # Wire the synchronization target to agenix's activation service.
       systemd.targets.nixos-artifacts-secrets = {
         after = [ "agenix.service" ];
         requires = [ "agenix.service" ];
       };
     }
     (lib.optionalAttrs (options ? age) {
-      # Translate the generic nixos-artifacts secret declarations into the
-      # agenix module's native `age.secrets.<name>` options.
-      age.secrets = lib.mapAttrs (name: secret: {
+      age.secrets = lib.mapAttrs (_: secret: {
+        inherit (secret) owner group mode path;
         file = secret.source;
-        owner = secret.owner;
-        group = secret.group;
-        mode = secret.mode;
-        path = secret.path;
-      }) cfg.secrets;
+      }) ageSecrets;
     })
   ]);
 }

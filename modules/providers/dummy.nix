@@ -2,19 +2,14 @@
 
 let
   cfg = config.security.artifacts;
+  dummySecrets = lib.filterAttrs (_: secret: 
+    let p = if secret.provider != null then secret.provider else cfg.provider;
+    in secret.enable && p == "dummy"
+  ) cfg.secrets;
 in {
-  config = lib.mkIf (cfg.enable && cfg.provider == "dummy") {
-    # The dummy provider writes plaintext placeholder values into the target
-    # paths. It exists solely for CI/CD and NixOS VM integration tests where
-    # real encryption keys are unavailable.
-    #
-    # Each secret gets its own oneshot service so that failures are isolated
-    # and ordering is per-secret.
-
+  config = lib.mkIf (cfg.enable && dummySecrets != {}) {
     systemd.services = lib.mapAttrs' (name: secret:
       let
-        # Write the dummy content to a Nix store file, then copy it at
-        # runtime.  This avoids shell-injection via the dummy string.
         dummyContent = pkgs.writeText "dummy-${name}" secret.dummy;
       in lib.nameValuePair "nixos-artifacts-dummy-${name}" {
         description = "Provision dummy secret '${name}'";
@@ -33,6 +28,6 @@ in {
           chmod "${secret.mode}" "${secret.path}"
         '';
       }
-    ) cfg.secrets;
+    ) dummySecrets;
   };
 }

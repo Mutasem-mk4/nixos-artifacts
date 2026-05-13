@@ -2,15 +2,12 @@
 
 let
   cfg = config.security.artifacts;
+  credsSecrets = lib.filterAttrs (_: secret: 
+    let p = if secret.provider != null then secret.provider else cfg.provider;
+    in secret.enable && p == "systemd-creds"
+  ) cfg.secrets;
 in {
-  config = lib.mkIf (cfg.enable && cfg.provider == "systemd-creds") {
-    # The systemd-creds provider uses systemd's native LoadCredentialEncrypted
-    # mechanism.  Each secret gets a oneshot service that copies the decrypted
-    # credential from $CREDENTIALS_DIRECTORY to the artifact target path.
-    #
-    # This allows services that expect file paths (the vast majority) to
-    # work without being rewritten to use $CREDENTIALS_DIRECTORY directly.
-
+  config = lib.mkIf (cfg.enable && credsSecrets != {}) {
     systemd.services = lib.mapAttrs' (name: secret:
       lib.nameValuePair "nixos-artifacts-creds-${name}" {
         description = "Provision systemd credential '${name}'";
@@ -20,9 +17,6 @@ in {
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          # Load the credential from the system credential store.
-          # The credential file should be placed at /etc/credstore/${name}
-          # (or encrypted variant at /etc/credstore.encrypted/${name}).
           LoadCredential = "${name}:/etc/credstore/${name}";
         };
 
@@ -33,6 +27,6 @@ in {
           chmod "${secret.mode}" "${secret.path}"
         '';
       }
-    ) cfg.secrets;
+    ) credsSecrets;
   };
 }
