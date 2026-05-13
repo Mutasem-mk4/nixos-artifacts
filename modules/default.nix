@@ -77,11 +77,6 @@ in {
       after = [ "local-fs.target" ];
     };
 
-    # Automatically set the default path if none is provided to ensure providers have uniform access
-    security.artifacts.secrets = lib.mapAttrs (name: secret: 
-      lib.mkDefault {
-        path = if secret.path != null then secret.path else "/run/secrets/${name}";
-      }
-    ) cfg.secrets;
+
   };
 }
