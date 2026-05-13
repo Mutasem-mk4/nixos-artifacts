@@ -87,6 +87,11 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
+    meta = {
+      maintainers = [ lib.maintainers.mutasem-mk4 ];
+      doc = ./doc/nixos-artifacts.md;
+    };
+
     assertions =
       # 1. Prevent store leakage
       (lib.mapAttrsToList (name: secret: {
