@@ -5,16 +5,19 @@
 # and assert that it fails with the correct error message.
 
 let
-  eval = pkgs.lib.nixos {
-    imports = [ nixos-artifacts ];
-
-    security.artifacts.enable = true;
-    security.artifacts.provider = "dummy";
-    security.artifacts.secrets."bad-secret" = {
-      # This path is inside /nix/store — the assertion must reject it
-      path = "/nix/store/fake-hash-bad-secret";
-      dummy = "should-never-deploy";
-    };
+  eval = pkgs.lib.nixosSystem {
+    modules = [
+      nixos-artifacts
+      {
+        security.artifacts.enable = true;
+        security.artifacts.provider = "dummy";
+        security.artifacts.secrets."bad-secret" = {
+          # This path is inside /nix/store — the assertion must reject it
+          path = "/nix/store/fake-hash-bad-secret";
+          dummy = "should-never-deploy";
+        };
+      }
+    ];
   };
 
   # Force evaluation of the assertions

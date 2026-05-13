@@ -5,14 +5,18 @@
 # must produce a clear assertion failure.
 
 let
-  eval = pkgs.lib.nixos {
-    imports = [ nixos-artifacts ];
-
-    security.artifacts.enable = true;
-    security.artifacts.provider = "sops-nix";
-    security.artifacts.secrets."no-source" = {
-      # Deliberately omitting `source` — the assertion must fire
-    };
+  eval = pkgs.lib.nixosSystem {
+    modules = [
+      nixos-artifacts
+      {
+        options.sops.secrets = pkgs.lib.mkOption { type = pkgs.lib.types.attrsOf pkgs.lib.types.anything; default = {}; };
+        security.artifacts.enable = true;
+        security.artifacts.provider = "sops-nix";
+        security.artifacts.secrets."no-source" = {
+          # Deliberately omitting `source` — the assertion must fire
+        };
+      }
+    ];
   };
 
   evaluated = builtins.tryEval (builtins.deepSeq eval.config.assertions eval.config.assertions);
